@@ -1,86 +1,85 @@
-// service-worker.js - Minimal Version
-const CACHE_NAME = 'app-cache-v1';
-const FILES_TO_CACHE = [
+const CACHE_NAME = 'expense-tracker-v2'; // Increment version when updating
+const urlsToCache = [
   '/',
   '/index.html',
+  '/manifest.json',
+  
+  // Icons - add all your icon files
+  '/icons/icon-72x72.png',
+  '/icons/icon-96x96.png',
+  '/icons/icon-128x128.png',
+  '/icons/icon-144x144.png',
+  '/icons/icon-152x152.png',
+  '/icons/icon-180x180.png',
+  '/icons/icon-192x192.png',
+  '/icons/icon-384x384.png',
+  '/icons/icon-512x512.png',
+  
+  // Your other app files
   '/styles.css',
   '/app.js',
-  '/manifest.json'
-  // Add other important files here
+  // Add other assets here
 ];
 
-// ========== INSTALL EVENT ==========
-// Runs when service worker is first installed
+// Install event - cache all resources
 self.addEventListener('install', event => {
-  console.log('Service Worker: Installing...');
-  
-  // Wait until caching is complete
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Caching files');
-        return cache.addAll(FILES_TO_CACHE);
-      })
-      .then(() => {
-        console.log('Service Worker: Installed');
-        return self.skipWaiting(); // Activate immediately
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
       })
   );
 });
 
-// ========== ACTIVATE EVENT ==========
-// Runs when service worker is activated
+// Fetch event - serve from cache, fallback to network
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // Cache hit - return response
+        if (response) {
+          return response;
+        }
+        
+        // Clone the request
+        const fetchRequest = event.request.clone();
+        
+        return fetch(fetchRequest)
+          .then(response => {
+            // Check if valid response
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+            
+            // Clone the response
+            const responseToCache = response.clone();
+            
+            // Add to cache
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+            
+            return response;
+          });
+      })
+  );
+});
+
+// Activate event - clean up old caches
 self.addEventListener('activate', event => {
-  console.log('Service Worker: Activated');
+  const cacheWhitelist = [CACHE_NAME];
   
-  // Remove old caches
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map(cache => {
-          if (cache !== CACHE_NAME) {
-            console.log('Service Worker: Clearing old cache');
-            return caches.delete(cache);
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
           }
         })
       );
     })
-  );
-  
-  return self.clients.claim(); // Take control immediately
-});
-
-// ========== FETCH EVENT ==========
-// Intercepts all network requests
-self.addEventListener('fetch', event => {
-  console.log('Service Worker: Fetching', event.request.url);
-  
-  event.respondWith(
-    // Try cache first, then network
-    caches.match(event.request)
-      .then(cachedResponse => {
-        // Return cached version if found
-        if (cachedResponse) {
-          console.log('Serving from cache:', event.request.url);
-          return cachedResponse;
-        }
-        
-        // Otherwise fetch from network
-        console.log('Fetching from network:', event.request.url);
-        return fetch(event.request)
-          .then(response => {
-            // Cache the new response for next time
-            return caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, response.clone());
-                return response;
-              });
-          })
-          .catch(error => {
-            // Optional: Return offline page if network fails
-            console.log('Fetch failed; returning offline page');
-            return caches.match('/offline.html');
-          });
-      })
   );
 });
