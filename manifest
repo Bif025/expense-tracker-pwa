@@ -1,0 +1,11 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Tracking Expense",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Expenses",
+  "start_url": "/",
+  "theme_color": "#ffffff"
+}
