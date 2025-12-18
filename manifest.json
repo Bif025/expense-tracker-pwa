@@ -2,10 +2,11 @@
   "background_color": "#ffffff",
   "dir": "ltr",
   "display": "standalone",
-  "name": "bif025.github",
+  "name": "Tracking Expense",
   "orientation": "any",
   "scope": "/",
   "short_name": "Expenses",
   "start_url": "/",
-  "theme_color": "#ffffff"
+  "theme_color": "#ffffff",
+  "description": "Track your expenses offline"
 }
